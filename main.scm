@@ -1,5 +1,8 @@
 (use (prefix sdl2 sdl2:)
-     cairo cairo.image posix tcp miscmacros srfi-4 tween)
+     cairo cairo.image posix tcp miscmacros srfi-4)
+
+(set-signal-handler! signal/int exit)
+(set-signal-handler! signal/term exit)
 
 (define-values (pdin pdout) (tcp-connect "localhost" 1234))
 
@@ -21,23 +24,39 @@
   (surface-flush! s)
   (sdl2:update-texture-raw! t #f (image-surface-get-data s) (image-surface-get-stride s)))
 
+(define-syntax safe
+  (syntax-rules ()
+    ((safe body)
+     (handle-exceptions exn
+       (begin
+         (set! dirty #t)
+         (print-error-message exn)
+         (print-call-chain))
+       body
+       (set! dirty #f)))))
+
 
 (define file-mod (file-modification-time "graphics.scm"))
 (define now (sdl2:get-ticks))
 (define dt 0)
+(define dirty #f)
 
 (load "graphics.scm")
 
-(let loop ()
+(define (reload-graphics)
   (let ((new-mod (file-modification-time "graphics.scm")))
     (when (> new-mod file-mod)
-      (load "graphics.scm"))
-    (set! file-mod new-mod))
+      (safe (load "graphics.scm")))
+    (set! file-mod new-mod)))
+
+(let loop ()
+  (reload-graphics)
   (let ((t (sdl2:get-ticks)))
     (set! dt (- t now))
     (set! now t))
   (save! ctx)
-  (show-frame)
+  (unless dirty
+    (safe (show-frame)))
   (restore! ctx)
   (update-texture! t s)
   (sdl2:render-clear! render)
