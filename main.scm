@@ -4,7 +4,9 @@
 (set-signal-handler! signal/int exit)
 (set-signal-handler! signal/term exit)
 
-(define-values (pdin pdout) (tcp-connect "localhost" 1234))
+(define graphics-file (car (command-line-arguments)))
+
+#;(define-values (pdin pdout) (tcp-connect "localhost" 1234))
 
 (define ww 800)
 (define wh 480)
@@ -12,7 +14,7 @@
 (sdl2:set-hint! 'render-scale-quality "0")
 (sdl2:set-main-ready!)
 (sdl2:init! '(video))
-(define window (sdl2:create-window! "Re-ception" 0 0 800 480))
+(define window (sdl2:create-window! "Butine" 0 0 800 480))
 (define render (sdl2:create-renderer! window -1 '(accelerated)))
 (set! (sdl2:render-logical-size render) (list 800 480))
 
@@ -36,17 +38,17 @@
        (set! dirty #f)))))
 
 
-(define file-mod (file-modification-time "graphics.scm"))
+(define file-mod (file-modification-time graphics-file))
 (define now (sdl2:get-ticks))
 (define dt 0)
 (define dirty #f)
 
-(load "graphics.scm")
+(load graphics-file)
 
 (define (reload-graphics)
-  (let ((new-mod (file-modification-time "graphics.scm")))
+  (let ((new-mod (file-modification-time graphics-file)))
     (when (> new-mod file-mod)
-      (safe (load "graphics.scm")))
+      (safe (load graphics-file)))
     (set! file-mod new-mod)))
 
 (let loop ()

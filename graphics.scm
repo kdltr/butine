@@ -151,7 +151,7 @@
 (define bees (list-tabulate 40 (lambda (i) (make-bee))))
 
 (define (show-frame)
-  (handle-network)
+  #;(handle-network)
   
   (set-source-rgb! ctx 0.72 0.51 0.65)
   (paint! ctx)
@@ -167,9 +167,8 @@
   (for-each (lambda (b) (b)) bees)
   )
 
-(show-frame)
-
 (define *pd-freq* 1)
+
 (define (handle-network)
   (when (char-ready? pdin)
     (set! *pd-freq*

@@ -1,0 +1,168 @@
+(use color cairo miscmacros numbers)
+
+(load "utils.scm")
+
+(define (color->cairo c)
+  (map (lambda (x) (exact->inexact (/ x 255))) (color->sRGB c)))
+
+(define (color:rotate-hue color degrees)
+  (let* ((LCh (color->L*C*h color))
+         (hue (+ (caddr LCh) degrees)))
+        (L*C*h->color
+          (append (take LCh 2)
+                  (list (cond ((< hue 0.0)
+                               (let incr ((h hue))
+                                 (if (>= h 0.0) h (incr (+ 360.0 h)))))
+                              ((> hue 360.0)
+                               (let reduce ((h hue))
+                                 (if (<= h 360.0) h (reduce (- h 360.0)))))
+                              (else
+                                hue)))))))
+
+(define (color:scale-chroma color factor)
+  (let* ((LCh (color->L*C*h color))
+                 (chroma (* (cadr LCh) factor)))
+        (L*C*h->color (cons (car LCh) (cons chroma (cddr LCh))))))
+
+(define (color:triad c)
+  (list (color:rotate-hue c -120) c (color:rotate-hue c 120)))
+
+(define (color:complement c)
+  (color:rotate-hue c 180))
+
+(define (random-color)
+  (color:sRGB (random 255) (random 255) (random 255)))
+
+(load "gen.scm")
+
+(define base-color (random-color))
+(print (color->cairo base-color))
+
+(define ww/3 (round (/ ww 3)))
+(define ww/2 (round (/ ww 2)))
+(define wh/2 (round (/ wh 2)))
+
+(define (random-flower)
+  (let* ((center-color (color:L*C*h (+ 80 (- (random 40) 20))
+                                    75
+                                    (random 360)))
+         (comp (color:complement center-color))
+         (a (+ 20 (random 10)))
+         (pts1 (color:rotate-hue comp (- a)))
+         (pts2 (color:rotate-hue comp a))
+         (angle-div1 (add1 (random 5)))
+         (angle-div2 (add1 (random 5)))
+         (len-div1 (+ 3 (random 6)))
+         (len-div2 (+ 3 (random 6)))
+         (len-num1 (add1 (random (quotient len-div1 2))))
+         (len-num2 (add1 (random (quotient len-div2 2))))
+         )
+  `((center-color . ,center-color)
+    (poly . ,(+ 3 (random 5)))
+    (petals (,pts1 ,(/ len-num1 len-div1)
+                   ,(/ (- len-div1 len-num1) len-div2)
+                   ,(/ pi angle-div1)
+                   ,(/ pi (* 2 angle-div1)))
+            (,pts2 ,(/ len-num2 len-div2)
+                   ,(/ (- len-div2 len-num2) len-div2)
+                   ,(/ pi angle-div2)
+                   ,(/ pi (* 2 angle-div2)))))))
+
+(randomize 1798971950949530792)
+(define *flowers*
+  (list-tabulate 40 (lambda (i) (cons i (random-flower)))))
+
+(define (show-frame)
+  (set! base-color (color:rotate-hue base-color (/ dt 10)))
+  (set-source-rgb! ctx 0.5 0.5 0.5)
+  (paint! ctx)
+  
+  #;(let ((triad1 (color:triad base-color))
+        (triad2 (color:triad (color:complement base-color))))
+    (save! ctx)
+    (color-line! triad1)
+    (translate! ctx 0 wh/2)
+    (color-line! triad2)
+    (restore! ctx))
+  
+  (for-each
+    (lambda (i+f)
+      (save! ctx)
+      (let* ((i (car i+f))
+             (f (cdr i+f))
+             (x (modulo i 10))
+             (y (quotient i 10)))
+        (translate! ctx
+                    (+ (/ ww 20) (* x (/ ww 10)))
+                    (+ (/ wh 8) (* y (/ wh 4))))
+        (scale! ctx 1.5 1.5)
+        (flower! f))
+    (restore! ctx))
+    *flowers*)
+  )
+
+(define (color-line! colors)
+  (save! ctx)
+  (for-each
+    (lambda (c)
+      (apply set-source-rgb! ctx (color->cairo c))
+      (rectangle! ctx 0 0 ww/3 wh/2)
+      (fill! ctx)
+      (translate! ctx ww/3 0))
+    colors)
+  (restore! ctx))
+
+(define 2pi (* 2 pi))
+(define pi/2 (/ pi 2))
+(define pi/3 (/ pi 3))
+(define pi/4 (/ pi 4))
+
+(define (flower! fl)
+  (let ((poly (alist-ref 'poly fl))
+        (pts (alist-ref 'petals fl)))
+    (scale! ctx 10 10)
+    (set-source-rgba! ctx 0 1 0 0.8)
+    (for-each
+      (lambda (p)
+        (apply petals poly p)
+        (rotate! ctx (/ pi poly)))
+      pts)
+    (set-source-rgba! ctx 0 0 1 0.8)
+  
+    (apply set-source-rgb! ctx (color->cairo (alist-ref 'center-color fl)))
+    (center poly)
+  ))
+  
+(define (center n)
+  (let ((angle (/ 2pi n)))
+    (dotimes (i n)
+      (line-to! ctx
+                (cos (* i angle))
+                (sin (* i angle)))))
+  (fill! ctx))
+
+(define (vec-curve-to! ctx v1 v2 v3)
+  (curve-to! ctx
+             (real-part v1) (imag-part v1)
+             (real-part v2) (imag-part v2)
+             (real-part v3) (imag-part v3)))
+
+(define (petals n color near far near-angle far-angle)
+  (let* ((phi (/ 2pi n)))
+    (dotimes (i n)
+      (let* ((v (make-polar 2.2 (* i phi)))
+             (v2 (make-polar (* (magnitude v) near)
+                             (+ (angle v) near-angle)))
+             (v3 (make-polar (* (magnitude v) far)
+                             (+ (angle v) far-angle)))
+             (v4 (make-polar (* (magnitude v) near)
+                             (- (angle v) near-angle)))
+             (v5 (make-polar (* (magnitude v) far)
+                             (- (angle v) far-angle))))
+        (move-to! ctx 0 0)
+        (vec-curve-to! ctx v2 v3 v)
+        (vec-curve-to! ctx v5 v4 0)
+        (apply set-source-rgba! ctx (append (color->cairo color) '(0.8)))
+        (fill! ctx)
+    )))
+  )
