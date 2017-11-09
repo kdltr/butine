@@ -1,6 +1,4 @@
-(use cairo miscmacros srfi-4 tween)
-
-(load "utils.scm")
+(include "utils.scm")
 
 (define bee-delay 10000)
 (define bee-wait-delay 3000)
@@ -26,10 +24,10 @@
 (define flowers '())
 (define (genfield n)
   (dotimes (i n)
-           (push! (list (+ 1000 (random 10000))
-                        (+ 500 (random 1000))
-                        (+ 40 (random (- ww 80)))
-                        (+ 40 (random (- wh 80))))
+           (push! (list (+ 1000 (pseudo-random-integer 10000))
+                        (+ 500 (pseudo-random-integer 1000))
+                        (+ 40 (pseudo-random-integer (- ww 80)))
+                        (+ 40 (pseudo-random-integer (- wh 80))))
                   flowers)))
 
 (genfield 100)
@@ -38,14 +36,14 @@
   (let ((flowers (remove (lambda (f) (and (= (third f) x)
                                           (= (fourth f) y)))
                          flowers)))
-    (list-ref flowers (random (length flowers)))))
+    (list-ref flowers (pseudo-random-integer (length flowers)))))
          
 
 (define (bee-trajectory x1 y1 x2 y2)
-  (let* ((c1x (+ x1 (- 150 (random 300))))
-         (c1y (+ y1 (- 150 (random 300))))
-         (c2x (+ x2 (- 150 (random 300))))
-         (c2y (+ y2 (- 150 (random 300)))))
+  (let* ((c1x (+ x1 (- 150 (pseudo-random-integer 300))))
+         (c1y (+ y1 (- 150 (pseudo-random-integer 300))))
+         (c2x (+ x2 (- 150 (pseudo-random-integer 300))))
+         (c2y (+ y2 (- 150 (pseudo-random-integer 300)))))
     (set! *bee-curve*
       (lambda ()
         (move-to! ctx x1 y1)
@@ -118,11 +116,11 @@
     
     (define (wander)
       (lambda ()
-        (set! bx (+ bx (- 1 (random 3))))
-        (set! by (+ by (- 1 (random 3))))))
+        (set! bx (+ bx (- 1 (pseudo-random-integer 3))))
+        (set! by (+ by (- 1 (pseudo-random-integer 3))))))
 
     (define (fly-to destx desty)
-      (let ((destination-time (+ now (random bee-delay)))
+      (let ((destination-time (+ now (pseudo-random-integer bee-delay)))
             (*next* (+ now bee-delay))
             (trajectory (bee-trajectory bx by destx desty))
             )
@@ -140,7 +138,7 @@
                      (fx (third next-flower))
                      (fy (fourth next-flower)))
                 (set! current-state
-                  (wait (random bee-wait-delay)
+                  (wait (pseudo-random-integer bee-wait-delay)
                         (lambda () (fly-to fx fy))))))))
         ))
     
@@ -169,7 +167,7 @@
 
 (define *pd-freq* 1)
 
-(define (handle-network)
+#;(define (handle-network)
   (when (char-ready? pdin)
     (set! *pd-freq*
       (string->number (car (string-split (read-line pdin) ";"))))))
