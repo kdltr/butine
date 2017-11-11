@@ -25,3 +25,42 @@
                 (vec* 3 (vec* p1 (* t (expt (- 1 t) 2)))))
           (vec+ (vec* 3 (vec* p2 (* (expt t 2) (- 1 t))))
                 (vec* p3 (expt t 3))))))
+
+(define (color->cairo c)
+  (map (lambda (x) (exact->inexact (/ x 255))) (color->sRGB c)))
+
+(define (color:rotate-hue color degrees)
+  (let* ((LCh (color->L*C*h color))
+         (hue (+ (caddr LCh) degrees)))
+        (L*C*h->color
+          (append (take LCh 2)
+                  (list (cond ((< hue 0.0)
+                               (let incr ((h hue))
+                                 (if (>= h 0.0) h (incr (+ 360.0 h)))))
+                              ((> hue 360.0)
+                               (let reduce ((h hue))
+                                 (if (<= h 360.0) h (reduce (- h 360.0)))))
+                              (else
+                                hue)))))))
+
+(define (color:scale-chroma color factor)
+  (let* ((LCh (color->L*C*h color))
+                 (chroma (* (cadr LCh) factor)))
+        (L*C*h->color (cons (car LCh) (cons chroma (cddr LCh))))))
+
+(define (color:triad c)
+  (list (color:rotate-hue c -120) c (color:rotate-hue c 120)))
+
+(define (color:complement c)
+  (color:rotate-hue c 180))
+
+(define (random-color)
+  (color:sRGB (pseudo-random-integer 255)
+              (pseudo-random-integer 255)
+              (pseudo-random-integer 255)))
+
+(define (vec-curve-to! ctx v1 v2 v3)
+  (curve-to! ctx
+             (real-part v1) (imag-part v1)
+             (real-part v2) (imag-part v2)
+             (real-part v3) (imag-part v3)))
