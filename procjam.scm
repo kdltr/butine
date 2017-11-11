@@ -48,19 +48,22 @@
 
 (define (random-petal-layer color)
   (let* ((angle-div (between 1 5))
-         (len-div (between 3 8))
-         (len-num (between 1 (quotient (between len-div (+ len-div 5))
-                                       2))))
+         (angle-mul (* 2 (pseudo-random-real)))
+         (len-div1 (between 3 8))
+         (len-num1 (between 1 (add1 len-div1)))
+         (len-div2 (between 3 8))
+         (len-num2 (between 1 (add1 len-div2)))
+                   )
     (list ;; petal base color
           color
           ;; first control point magnitude
-          (/ len-num len-div)
+          (/ len-num1 len-div1)
           ;; second control point magnitude
-          (/ (- len-div len-num) len-div)
+          (/ len-num2 len-div2)
           ;; first control point angle
           (/ pi angle-div)
           ;; second control point angle
-          (/ pi (* 2 angle-div))
+          (/ pi (* angle-mul angle-div))
           ;; displacement
           (* 2pi (pseudo-random-real)))
     ))
@@ -69,8 +72,6 @@
 (set-pseudo-random-seed! #${3c7ed09c3a86bb8c35cb8a35ee5a30a5e1fbc23b928c9596e605b54abc9dc09b3bf4d8feac0c97df97ec8f0602c3dc48cf6170d92a7485333a6798f1d1f2eef1a492a16a639141011ce1ac45923f0a83c962985d656e78292b12e96ee888185967151127bcd3f419d450a5e2e9921b0ebb9b7ae9e6076446fa13beb32d7420bf})
 (define *flowers*
   (list-tabulate 40 (lambda (i) (cons i (random-flower)))))
-
-(pp *flowers*)
 
 (define (show-frame)
   (set! base-color (color:rotate-hue base-color (/ dt 10)))
@@ -85,6 +86,7 @@
     (color-line! triad2)
     (restore! ctx))
   
+  ;; 40 flowers
   (for-each
     (lambda (i+f)
       (save! ctx)
@@ -101,10 +103,22 @@
     (restore! ctx))
     *flowers*)
   
-  (let ((n 7))
+  ;; Flower number n
+  #;(let ((n 11))
+      (save! ctx)
       (translate! ctx ww/2 wh/2)
       (scale! ctx 10 10)
-      (flower! (cdr (list-ref *flowers* n))))
+      (flower! (cdr (list-ref *flowers* n)))
+      (restore! ctx))
+  
+  ;; Stream of flowers
+  #;(let ()
+      (save! ctx)
+      (translate! ctx ww/2 wh/2)
+      (scale! ctx 10 10)
+      (flower! (random-flower))
+      (restore! ctx)
+      (thread-sleep! 0.5))
 
   )
 
@@ -130,12 +144,6 @@
         (apply petals poly p)
         (rotate! ctx (/ 2pi (* poly layers))))
       pts)
-    
-    #;(let* ((fib1 8)
-           (fib2 5))
-      (apply petals fib1 (car pts))
-      (rotate! ctx (/ pi (lcm fib1 fib2)))
-      (apply petals fib2 (cadr pts)))
     
     (center (alist-ref 'center-size fl)
             (alist-ref 'center-color fl)
@@ -169,11 +177,13 @@
     (set-source! ctx p)
     (dotimes (i n)
       (rotate! ctx (/ 2pi n))
-      (apply petal args))
+      (apply petal i args))
     (pattern-destroy! p)))
 
-(define (petal near far near-angle far-angle moment)
-  (let* ((v (make-polar 2 0))
+(define (petal i near far near-angle far-angle moment)
+  (let* ((v (make-polar (+ 2
+                           (* 1/100 (sin (* (add1 i) moment))))
+                        (* 1/100 (cos (* (add1 i) moment)))))
          (v2 (make-polar (* (magnitude v) near)
                          (+ (angle v) near-angle)))
          (v3 (make-polar (* (magnitude v) far)
