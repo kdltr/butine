@@ -1,6 +1,6 @@
 (import scheme chicken extras data-structures srfi-1)
 (use (prefix sdl2 sdl2:)
-     cairo cairo.image posix tcp miscmacros srfi-4
+     cairo cairo.image cairo.svg posix tcp miscmacros srfi-4
      new-random tween)
 
 (set-signal-handler! signal/int exit)
@@ -44,6 +44,7 @@
 (define now (sdl2:get-ticks))
 (define dt 0)
 (define dirty #f)
+(define quit? #f)
 
 (load graphics-file)
 
@@ -52,6 +53,36 @@
     (when (> new-mod file-mod)
       (safe (load graphics-file)))
     (set! file-mod new-mod)))
+
+(define (handle-events)
+  (let ((e (sdl2:poll-event!)))
+    (when e
+      (handle-event e)
+      (handle-events))))
+
+(define (handle-event e)
+  (case (sdl2:event-type e)
+    ((key-down)
+     (handle-key-down-event e))
+    ((quit)
+     (set! quit? #t))))
+
+(define (handle-key-down-event e)
+  (case (sdl2:keyboard-event-scancode e)
+    ((escape) (set! quit? #t))
+    ((space) (set! *flower* (random-flower)))
+    ((return) (screenshot!))))
+
+(define (screenshot!)
+  (let* ((filename (sprintf "flower-~A.svg"
+                            (time->string (seconds->local-time)
+                                          "%Y%m%d-%H%M%S")))
+         (surface (svg-surface-create filename ww wh))
+         (context (create surface)))
+    (fluid-let ((ctx context))
+      (show-frame))
+    (destroy! context)
+    (surface-destroy! surface)))
 
 (let loop ()
   (reload-graphics)
@@ -66,5 +97,7 @@
   (sdl2:render-clear! render)
   (sdl2:render-copy! render t)
   (sdl2:render-present! render)
-  (loop))
+  (handle-events)
+  (unless quit?
+    (loop)))
 

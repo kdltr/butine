@@ -105,87 +105,23 @@
 (define (all-hybridizations f1 f2)
   (list-tabulate 7 (lambda (i) (hybridize i f1 f2))))
 
-#;(set-pseudo-random-seed! (random-bytes))
-(set-pseudo-random-seed! #${3c7ed09c3a86bb8c35cb8a35ee5a30a5e1fbc23b928c9596e605b54abc9dc09b3bf4d8feac0c97df97ec8f0602c3dc48cf6170d92a7485333a6798f1d1f2eef1a492a16a639141011ce1ac45923f0a83c962985d656e78292b12e96ee888185967151127bcd3f419d450a5e2e9921b0ebb9b7ae9e6076446fa13beb32d7420bf})
-(define *flowers*
-  (list-tabulate 40 (lambda (i) (random-flower))))
+(set-pseudo-random-seed! (random-bytes))
+#;(set-pseudo-random-seed! #${3c7ed09c3a86bb8c35cb8a35ee5a30a5e1fbc23b928c9596e605b54abc9dc09b3bf4d8feac0c97df97ec8f0602c3dc48cf6170d92a7485333a6798f1d1f2eef1a492a16a639141011ce1ac45923f0a83c962985d656e78292b12e96ee888185967151127bcd3f419d450a5e2e9921b0ebb9b7ae9e6076446fa13beb32d7420bf})
 
-(pp (car *flowers*))
-
-(define fl1 (list-ref *flowers* 3))
-(define fl2 (list-ref *flowers* 25))
-(define fl3 (list-ref *flowers* 30))
-
-
-(define fl1-fl2 (all-hybridizations fl1 fl2))
-(define fl2-fl3 (all-hybridizations fl2 fl3))
-(define fl1-fl3 (all-hybridizations fl1 fl3))
-
-(define *flowers*
-  (append (list fl1) fl1-fl2 (list fl2) fl2-fl3 (list fl3) 
-          (reverse fl1-fl3) (list fl1)))
-
-(pp (car *flowers*))
+(define *flower* (random-flower))
 
 (define (show-frame)
   (set! base-color (color:rotate-hue base-color (/ dt 10)))
   (apply set-source-rgb! ctx (color->cairo (color:L*C*h 50 0 0)))
   (paint! ctx)
   
-  #;(let ((triad1 (color:triad base-color))
-        (triad2 (color:triad (color:complement base-color))))
-    (save! ctx)
-    (color-line! triad1)
-    (translate! ctx 0 wh/2)
-    (color-line! triad2)
-    (restore! ctx))
-  
-  ;; 40 flowers
-  (for-each
-    (lambda (i f)
-      (save! ctx)
-      (let* ((x (modulo i 10))
-             (y (quotient i 10)))
-        (translate! ctx
-                    (+ (/ ww 20) (* x (/ ww 10)))
-                    (+ (/ wh 8) (* y (/ wh 4))))
-        (scale! ctx 20 20)
-        (apply flower! f))
-      (restore! ctx))
-    (iota (length *flowers*))
-    *flowers*)
-  
-  ;; Flower number n
-  #;(let ((n 14))
-    (save! ctx)
-    (translate! ctx ww/2 wh/2)
-    (scale! ctx 100 100)
-    (apply flower! (list-ref *flowers* n))
-    (restore! ctx))
-  
   ;; Stream of flowers
-  #;(let ()
+  (let ()
     (save! ctx)
     (translate! ctx ww/2 wh/2)
     (scale! ctx 100 100)
-    (apply flower! (random-flower))
-    (restore! ctx)
-    (thread-sleep! 0.5))
-
-  ;; hybridation test
-  #;(let* ((fls (cons* fl1 fl2 fl3 (append fl1-fl2 fl2-fl3 fl1-fl3)))
-         (len (length fls)))
-    (for-each
-      (lambda (i f)
-        (save! ctx)
-        (translate! ctx (inexact (* i (/ ww (add1 len)))) wh/2)
-        (scale! ctx 10 10)
-        (apply flower! f)
-        (restore! ctx))
-      (iota len 1)
-      fls))
-  
-  )
+    (apply flower! *flower*)
+    (restore! ctx)))
 
 (define (color-line! colors)
   (save! ctx)
