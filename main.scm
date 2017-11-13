@@ -1,14 +1,9 @@
 (import scheme chicken extras data-structures srfi-1)
 (use (prefix sdl2 sdl2:)
      cairo cairo.image cairo.svg posix tcp miscmacros srfi-4
-     new-random tween)
+     new-random tween
+     color numbers)
 
-(set-signal-handler! signal/int exit)
-(set-signal-handler! signal/term exit)
-
-(define graphics-file (car (command-line-arguments)))
-
-#;(define-values (pdin pdout) (tcp-connect "localhost" 1234))
 
 (define ww 800)
 (define wh 480)
@@ -28,31 +23,11 @@
   (surface-flush! s)
   (sdl2:update-texture-raw! t #f (image-surface-get-data s) (image-surface-get-stride s)))
 
-(define-syntax safe
-  (syntax-rules ()
-    ((safe body)
-     (handle-exceptions exn
-       (begin
-         (set! dirty #t)
-         (print-error-message exn)
-         (print-call-chain))
-       body
-       (set! dirty #f)))))
-
-
-(define file-mod (file-modification-time graphics-file))
 (define now (sdl2:get-ticks))
 (define dt 0)
-(define dirty #f)
 (define quit? #f)
 
-(load graphics-file)
-
-(define (reload-graphics)
-  (let ((new-mod (file-modification-time graphics-file)))
-    (when (> new-mod file-mod)
-      (safe (load graphics-file)))
-    (set! file-mod new-mod)))
+(include "procjam.scm")
 
 (define (handle-events)
   (let ((e (sdl2:poll-event!)))
@@ -85,13 +60,11 @@
     (surface-destroy! surface)))
 
 (let loop ()
-  (reload-graphics)
   (let ((t (sdl2:get-ticks)))
     (set! dt (- t now))
     (set! now t))
   (save! ctx)
-  (unless dirty
-    (safe (show-frame)))
+  (show-frame)
   (restore! ctx)
   (update-texture! t s)
   (sdl2:render-clear! render)

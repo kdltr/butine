@@ -1,12 +1,10 @@
-(use color cairo miscmacros numbers)
-
 (define 2pi (* 2 pi))
 (define pi/2 (/ pi 2))
 (define pi/3 (/ pi 3))
 (define pi/4 (/ pi 4))
 
-(load "gen.scm")
-(load "utils.scm")
+(include "gen.scm")
+(include "utils.scm")
 
 (define base-color (random-color))
 
