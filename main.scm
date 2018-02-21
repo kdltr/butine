@@ -20,7 +20,7 @@
 (define render (sdl2:create-renderer! window -1 '(accelerated)))
 (set! (sdl2:render-logical-size render) (list 800 480))
 
-(define s (image-surface-create +format-rgb24+ ww wh))
+(define s (image-surface-create 'rgb24 ww wh))
 (define ctx (create s))
 (define t (sdl2:create-texture render 'rgb888 'streaming ww wh))
 
