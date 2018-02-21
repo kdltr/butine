@@ -1,7 +1,7 @@
 (import scheme chicken extras data-structures srfi-1)
 (use (prefix sdl2 sdl2:)
-     cairo cairo.image cairo.svg posix tcp miscmacros srfi-4
-     new-random tween
+     cairo cairo.image cairo.svg miscmacros srfi-4
+     new-random
      color numbers)
 
 
@@ -15,7 +15,7 @@
 (define render (sdl2:create-renderer! window -1 '(accelerated)))
 (set! (sdl2:render-logical-size render) (list 800 480))
 
-(define s (image-surface-create +format-rgb24+ ww wh))
+(define s (image-surface-create 'rgb24 ww wh))
 (define ctx (create s))
 (define t (sdl2:create-texture render 'rgb888 'streaming ww wh))
 
