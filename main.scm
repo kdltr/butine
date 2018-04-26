@@ -1,6 +1,6 @@
 (import scheme chicken extras data-structures srfi-1)
 (use (prefix sdl2 sdl2:)
-     cairo cairo.image posix tcp miscmacros srfi-4
+     cairo cairo.surface.image posix tcp miscmacros srfi-4
      new-random tween)
 
 (set-signal-handler! signal/int exit)

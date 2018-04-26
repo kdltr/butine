@@ -1,4 +1,6 @@
-(include "utils.scm")
+(use miscmacros new-random tween cairo)
+ 
+ (include "utils.scm")
 
 (define bee-delay 10000)
 (define bee-wait-delay 3000)
